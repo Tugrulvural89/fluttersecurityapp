@@ -33,9 +33,7 @@ class _BatteryPageState extends State<BatteryPage> {
 
   void _checkListBattery () async {
     _battery.onBatteryStateChanged.listen((event) {
-      setState(() {
         _batteryState = event;
-      });
     });
   }
   @override

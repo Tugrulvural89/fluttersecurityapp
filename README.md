@@ -1,17 +1,30 @@
-# security_app
+# Flutter Security App Project
 
-A new flutter security app.
 
-## Getting Started
+This project is a phone motion capabilities-based alarm and location tracking application developed with Flutter.
 
-This project is a starting point for a Flutter application.
+1. Setup
+2. Development
+3. Review
+4. Upload
 
-A few resources to get you started if this is your first Flutter project:
+## Usage
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Users will be able to set sensitivity features and a password to utilize location tracking and alarm functionalities.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# fluttersecurityapp
+## To-Do List
+
+- [x] Project Creation
+- [x] Installation of iOS Dependencies
+- [x] Installation of Android Dependencies
+- [x] Implementation of the Design
+- [x] Creation of Alarm List
+- [x] Toggle On/Off Mode
+- [x] Location Settings
+- [x] Guard Settings
+- [x] Password Setting
+- [x] Sensitivity Adjustment
+- [ ] Building the Application
+- [ ] Deployment
+
+

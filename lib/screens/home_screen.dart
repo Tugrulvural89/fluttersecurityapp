@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,61 +15,107 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-
-  final assetAudioPlayer = AudioPlayer();
-   bool isPlaying = false;
-   bool listIsPlaying = false;
-   int listPlayIndex = 100;
-
-
-  List<String> playList = [
-    'audios/default_alarm.mp3',
-    'audios/caralarm.mp3',
-    'audios/ambulence.mp3',
-    'audios/likeclock.mp3',
-    'audios/phone.mp3',
-    'audios/test1.mp3',
-    'audios/test2.mp3',
-    'audios/test3.mp3',
-    'audios/test4.mp3',
-    'audios/test5.mp3',
-    'audios/tictac.mp3',
-    'audios/police.mp3',
-  ];
+    late AudioPlayer assetAudioPlayer;
+    late StreamSubscription<UserAccelerometerEvent> accelerometerSubscription;
+    late StreamSubscription<GyroscopeEvent> gyroscopeSubscription;
+    bool isPlaying = false;
+    bool listIsPlaying = false;
+    int listPlayIndex = 100;
 
 
 
-  @override
-  void initState () {
-    super.initState();
-    listenToSensors();
-  }
+    // AccelerationEvent
+    double xValue = 0.0;
+    // AccelerationEvent True False
+
+    // GyroscopeEvent
+    double xValueG = 0.0;
+    // GyroscopeEvent True False
+
+
+    bool batteryStatusWork = false;
+
+
+
+    List<String> playList = [
+      'audios/default_alarm.mp3',
+      'audios/caralarm.mp3',
+      'audios/ambulence.mp3',
+      'audios/likeclock.mp3',
+      'audios/phone.mp3',
+      'audios/test1.mp3',
+      'audios/test2.mp3',
+      'audios/test3.mp3',
+      'audios/test4.mp3',
+      'audios/test5.mp3',
+      'audios/tictac.mp3',
+      'audios/police.mp3',
+    ];
+
+    String chosenSound = 'audios/default_alarm.mp3';
+
+    _loadSettings () async {
+      // Obtain shared preferences.
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      setState(() {
+        chosenSound = prefs.getString('chosenSound') ?? 'audios/default_alarm.mp3';
+        xValue = prefs.getDouble('xValue') ?? 0.0;
+        xValueG = prefs.getDouble('xValueG') ?? 0.0;
+        batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? false;
+      });
+    }
+
+    _saveSettings () async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('chosenSound', chosenSound);
+    }
+
+     bool _setActiveSound (String mySound) {
+      if (chosenSound == mySound) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+
+    @override
+    void initState () {
+      super.initState();
+      assetAudioPlayer = AudioPlayer();
+      listenToSensors();
+      _loadSettings();
+    }
 
   void playAlarmSound () async {
-    if (isPlaying==false) {
-      await assetAudioPlayer.play(AssetSource('audios/default_alarm.mp3'));
+    if (!isPlaying && batteryStatusWork && mounted) {
+      await assetAudioPlayer.play(AssetSource(chosenSound));
       setState(() {
         isPlaying = true;
       });
     }
   }
 
-
    @override
    void dispose () {
-      assetAudioPlayer.dispose();
-     super.dispose();
+    accelerometerSubscription.cancel(); // Event listener'ı iptal et
+    assetAudioPlayer.dispose();
+    super.dispose();
    }
 
   void stopAlarmSound() {
+    if (isPlaying && mounted) {
       assetAudioPlayer.stop();
       setState(() {
         isPlaying = false;
+        listIsPlaying = false;
       });
+    }
   }
 
   void playMySound (String myMusic, int index) async {
-    if (listIsPlaying==false) {
+    if (listIsPlaying==false && !isPlaying) {
       await assetAudioPlayer.play(AssetSource(myMusic));
       setState(() {
         listPlayIndex = index;
@@ -82,24 +131,30 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() {
         listPlayIndex = index;
         listIsPlaying = false;
+        isPlaying= false;
       });
     }
   }
 
 
   void listenToSensors() {
-    userAccelerometerEvents.listen((event) {
-      if (event.x.abs()>0.5 || event.y.abs()>0.5 || event.z.abs()>0.5) {
+
+    gyroscopeSubscription = gyroscopeEvents.listen((event) {
+          print(event.x.abs());
+          print(event.y.abs());
+          print(event.z.abs());
+      });
+    accelerometerSubscription = userAccelerometerEvents.listen((event) {
+      if (event.x.abs()> xValue || event.y.abs() > xValue || event.z.abs()> xValue) {
         playAlarmSound();
       }
     });
     assetAudioPlayer.onPlayerStateChanged.listen((PlayerState event) {
-      print(event);
       if (event == PlayerState.playing) {
-        isPlaying = true;
+          isPlaying = true;
       }
       if (event == PlayerState.stopped) {
-        isPlaying = false;
+          isPlaying = false;
       }
     });
   }
@@ -108,19 +163,38 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: () {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) {
+            return  MyHomePage(title: 'Secure Guard',);
+          }));
+        },),
+        title: Text('Sound Settings'),
+
+      ),
       body:  SingleChildScrollView(
         child: Column(
           children: [
             Align(
               alignment: Alignment.center,
-              child: SizedBox(
-                height: 50,
-                child: IconButton(
-                    onPressed: () {stopAlarmSound();},
-                    icon:  isPlaying ? Icon(FontAwesomeIcons.stop) :Icon(FontAwesomeIcons.play),
-                ),
-              ),
+              child: Column(
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.alarm, color: Colors.orange),
+                      Text("alarımı görmek için salla"),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 50,
+                    child: IconButton(
+                      onPressed: () {stopAlarmSound();},
+                      icon:  isPlaying ? const Icon(FontAwesomeIcons.stop) : const Icon(FontAwesomeIcons.play),
+                    ),
+                  ),
+                ],
+              )
             ),
             Padding(
               padding: const EdgeInsets.all(18.0),
@@ -130,14 +204,26 @@ class HomeScreenState extends State<HomeScreen> {
                   itemCount: playList.length,
                   itemBuilder: (context, index) {
                      Color leadIconColor = Colors.black54;
-                     Icon trailIcon =  Icon(FontAwesomeIcons.play);
+                     Icon trailIcon =  const Icon(FontAwesomeIcons.play);
                     if (index == listPlayIndex) {
                        leadIconColor = listIsPlaying ? Colors.green : Colors.black54;
-                       trailIcon =  listIsPlaying ? Icon(FontAwesomeIcons.stop) :Icon(FontAwesomeIcons.play);
+                       trailIcon =  listIsPlaying ? const Icon(FontAwesomeIcons.stop) : const Icon(FontAwesomeIcons.play);
                     }
                     return ListTile(
-                      leading:  Icon(FontAwesomeIcons.music, color: leadIconColor),
-                      title: Text(playList[index]),
+                      leading:  Checkbox(
+                        value: _setActiveSound(playList[index]),
+                        tristate: true,
+                        onChanged: (bool? newValue)  {
+                            if (newValue != null) {
+                              setState(() {
+                                 chosenSound = playList[index];
+                              });
+                              _saveSettings();
+                            }
+                        },
+                      ),
+                      title: Icon(FontAwesomeIcons.music, color: leadIconColor),
+                      subtitle: Text(playList[index]),
                       trailing: IconButton(
                         icon: trailIcon,
                         onPressed: () {
@@ -162,5 +248,4 @@ class HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }

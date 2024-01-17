@@ -44,8 +44,6 @@ android {
     }
 
     defaultConfig {
-        // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.example.security_app"
         // You can update the following values to match your application needs.
