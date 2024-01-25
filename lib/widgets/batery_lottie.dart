@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 
-
-class BatteryLottie extends StatelessWidget {
-  const BatteryLottie({super.key});
+//all lottie json file work dynamically under this widget
+class LottieAnimations extends StatelessWidget {
+  final String lottieFiles;
+  const LottieAnimations({super.key, required this.lottieFiles});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +14,7 @@ class BatteryLottie extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: SizedBox(
           height: MediaQuery.of(context).size.height*0.10,
-          child: Lottie.asset('assets/animations/animation_lo7a6jsk.json'),
+          child: Lottie.asset(lottieFiles),
         ),
       ),
     );

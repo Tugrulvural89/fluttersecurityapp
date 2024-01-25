@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
 
         android:label="security_app"
@@ -15,6 +22,7 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -45,6 +53,10 @@
             android:value="2" />
         <meta-data  android:name="com.google.firebase.messaging.default_notification_icon"
                     android:resource="@mipmap/ic_launcher" />
+
+        <!-- TODO: Add your Google Maps API key here -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+                   android:value="AIzaSyDAVhGHddqAhmNMeCRV--hvDE5xF1HLUPc"/>
 
     </application>
 

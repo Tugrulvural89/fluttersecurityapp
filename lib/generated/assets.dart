@@ -2,8 +2,11 @@
 class Assets {
   Assets._();
 
+  static const String animations1705759952887 = 'assets/animations/1705759952887.json';
   static const String animationsAnimationLo7a6jsk = 'assets/animations/animation_lo7a6jsk.json';
+  static const String animationsAnimationLoaderSettings = 'assets/animations/animation_loader_settings.json';
   static const String assetsAnimationsAnimationLo7a6jsk = 'assets/animations/animation_lo7a6jsk.json';
+  static const String assetsAnimationsAnimationLoaderSettings = 'assets/animations/animation_loader_settings.json';
   static const String assetsAudiosAmbulence = 'assets/audios/ambulence.mp3';
   static const String assetsAudiosCaralarm = 'assets/audios/caralarm.mp3';
   static const String assetsAudiosDefaultAlarm = 'assets/audios/default_alarm.mp3';

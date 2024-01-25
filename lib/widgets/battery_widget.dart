@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 import 'batery_lottie.dart';
 
-
+// check device in battery or not
+// we will use this option on settings and condition alarm state
 class BatteryPage extends StatefulWidget {
   const BatteryPage({super.key});
 
@@ -38,15 +39,19 @@ class _BatteryPageState extends State<BatteryPage> {
   }
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _batteryState == BatteryState.charging ? const BatteryLottie() : const SizedBox(height: 5),
-        Center(
-          child: Text(
-            _batteryState == BatteryState.charging ? 'True' : 'False'
-          ),
-        ),
-      ],
+    return Center(
+      child:
+        _batteryState == BatteryState.charging ?
+              const LottieAnimations(
+                lottieFiles: 'assets/animations/animation_lo7a6jsk.json',)
+        // if you want to change non battery status animation add LottieAnimations
+                          : const Text('No charging now'),
+        // if you want to print out battery status true false
+        // Center(
+        //   child: Text(
+        //     _batteryState == BatteryState.charging ? 'True' : 'False'
+        //   ),
+        // ),
     );
   }
 

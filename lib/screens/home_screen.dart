@@ -4,6 +4,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tuple/tuple.dart';
 
 import '../main.dart';
 
@@ -25,31 +26,28 @@ class HomeScreenState extends State<HomeScreen> {
 
 
     // AccelerationEvent
-    double xValue = 0.0;
+    double xValue = 1.0;
     // AccelerationEvent True False
 
     // GyroscopeEvent
-    double xValueG = 0.0;
+    double xValueG = 3.0;
     // GyroscopeEvent True False
+    bool batteryStatusWork = true;
 
+    List<Tuple2<String, String>> theMainPlayList = [
+      const Tuple2('audios/default_alarm.mp3', 'Default'),
+      const Tuple2('audios/caralarm.mp3', 'Car'),
+      const Tuple2('audios/ambulence.mp3', 'Ambulence'),
+      const Tuple2('audios/likeclock.mp3', 'Clock'),
+      const Tuple2('audios/phone.mp3', 'Phone'),
+      const Tuple2('audios/test1.mp3', 'Random 1'),
+      const Tuple2('audios/test2.mp3', 'Random 2'),
+      const Tuple2('audios/test3.mp3', 'Random 3'),
+      const Tuple2('audios/test4.mp3', 'Random 4'),
+      const Tuple2('audios/test5.mp3', 'Random 5'),
+      const Tuple2('audios/tictac.mp3', 'Tic Tac'),
+      const Tuple2('audios/police.mp3', 'Police Sound'),
 
-    bool batteryStatusWork = false;
-
-
-
-    List<String> playList = [
-      'audios/default_alarm.mp3',
-      'audios/caralarm.mp3',
-      'audios/ambulence.mp3',
-      'audios/likeclock.mp3',
-      'audios/phone.mp3',
-      'audios/test1.mp3',
-      'audios/test2.mp3',
-      'audios/test3.mp3',
-      'audios/test4.mp3',
-      'audios/test5.mp3',
-      'audios/tictac.mp3',
-      'audios/police.mp3',
     ];
 
     String chosenSound = 'audios/default_alarm.mp3';
@@ -60,9 +58,9 @@ class HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         chosenSound = prefs.getString('chosenSound') ?? 'audios/default_alarm.mp3';
-        xValue = prefs.getDouble('xValue') ?? 0.0;
-        xValueG = prefs.getDouble('xValueG') ?? 0.0;
-        batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? false;
+        xValue = prefs.getDouble('xValue') ?? 1.0;
+        xValueG = prefs.getDouble('xValueG') ?? 3.0;
+        batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? true;
       });
     }
 
@@ -100,6 +98,7 @@ class HomeScreenState extends State<HomeScreen> {
    @override
    void dispose () {
     accelerometerSubscription.cancel(); // Event listener'ı iptal et
+    gyroscopeSubscription.cancel();
     assetAudioPlayer.dispose();
     super.dispose();
    }
@@ -138,11 +137,7 @@ class HomeScreenState extends State<HomeScreen> {
 
 
   void listenToSensors() {
-
     gyroscopeSubscription = gyroscopeEvents.listen((event) {
-          print(event.x.abs());
-          print(event.y.abs());
-          print(event.z.abs());
       });
     accelerometerSubscription = userAccelerometerEvents.listen((event) {
       if (event.x.abs()> xValue || event.y.abs() > xValue || event.z.abs()> xValue) {
@@ -158,6 +153,7 @@ class HomeScreenState extends State<HomeScreen> {
       }
     });
   }
+
 
 
   @override
@@ -183,7 +179,7 @@ class HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.alarm, color: Colors.orange),
-                      Text("alarımı görmek için salla"),
+                      Text("Shake the device to test"),
                     ],
                   ),
                   SizedBox(
@@ -201,29 +197,32 @@ class HomeScreenState extends State<HomeScreen> {
               child: SizedBox(
                 height: MediaQuery.of(context).size.height * 0.75,
                 child: ListView.builder(
-                  itemCount: playList.length,
+                  itemCount: theMainPlayList.length,
                   itemBuilder: (context, index) {
                      Color leadIconColor = Colors.black54;
                      Icon trailIcon =  const Icon(FontAwesomeIcons.play);
                     if (index == listPlayIndex) {
-                       leadIconColor = listIsPlaying ? Colors.green : Colors.black54;
-                       trailIcon =  listIsPlaying ? const Icon(FontAwesomeIcons.stop) : const Icon(FontAwesomeIcons.play);
+                       leadIconColor = listIsPlaying ?
+                          Colors.green : Colors.black54;
+                       trailIcon =  listIsPlaying ?
+                       const Icon(FontAwesomeIcons.stop)
+                           : const Icon(FontAwesomeIcons.play);
                     }
                     return ListTile(
                       leading:  Checkbox(
-                        value: _setActiveSound(playList[index]),
+                        value: _setActiveSound(theMainPlayList[index].item1),
                         tristate: true,
                         onChanged: (bool? newValue)  {
                             if (newValue != null) {
                               setState(() {
-                                 chosenSound = playList[index];
+                                 chosenSound = theMainPlayList[index].item1;
                               });
                               _saveSettings();
                             }
                         },
                       ),
                       title: Icon(FontAwesomeIcons.music, color: leadIconColor),
-                      subtitle: Text(playList[index]),
+                      subtitle: Center(child: Text(theMainPlayList[index].item2)),     // Text(playList[index]),
                       trailing: IconButton(
                         icon: trailIcon,
                         onPressed: () {
@@ -231,7 +230,7 @@ class HomeScreenState extends State<HomeScreen> {
                             listPlayIndex = index;
                           });
                           if (listIsPlaying==false) {
-                            playMySound(playList[index], index);
+                            playMySound(theMainPlayList[index].item1, index);
                           } else {
                             stopMyPlayMusic(index);
                           }

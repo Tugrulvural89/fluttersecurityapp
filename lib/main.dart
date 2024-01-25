@@ -1,23 +1,29 @@
 import 'dart:async';
-
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screen_lock/flutter_screen_lock.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:security_app/screens/geo_location.dart';
 import 'package:security_app/screens/home_screen.dart';
 import 'package:security_app/screens/set_password.dart';
+import 'package:security_app/services/locations.dart';
+import 'package:security_app/utils/icon_copy_text.dart';
 import 'package:security_app/widgets/battery_widget.dart';
+import 'package:security_app/widgets/google_maps.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:security_app/screens/guard_settings.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'manager/sensor_manager.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
-
-
+import 'package:tuple/tuple.dart';
+import 'package:dio/dio.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,81 +59,86 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late SensorManager sensorManager;
   int switchValue = 0;
-  late bool? statusApp;
   int value = 0;
   // AccelerationEvent
-   double xValue = 0.0;
+   double xValue = 1.0;
   // AccelerationEvent True False
-
   // GyroscopeEvent
-   double xValueG = 0.0;
+   double xValueG = 3.0;
   // GyroscopeEvent True False
-
   String chosenSound = 'audios/default_alarm.mp3';
-  bool batteryStatusWork = false;
+  bool batteryStatusWork = true;
   bool isPlaying = false;
-
   bool isPasswordIncorrect = false;
-  late AudioPlayer assetAudioPlayer;
-  late StreamSubscription<UserAccelerometerEvent> accelerometerSubscription;
-  late StreamSubscription<GyroscopeEvent> gyroscopeSubscription;
- double _volumeListenerValue = 1;
-
+  double _volumeListenerValue = 1;
+  // this is location post and get api header auth values
+  String userId = '';
+  String userPass = '';
+  ApiService apiService = ApiService();
   late String secValue;
   bool secValueUpdate = false;
-
-  void _redirectFunc () {
-    if (!isPlaying && switchValue != 1) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) {
-        return const HomeScreen();
-      }));
-    }
-  }
-
+  late Tuple2 idAndPass;
+  late bool userStatus;
+  late bool userCreated;
+  late SensorManager sensorManager;
 
   @override
   void initState() {
     super.initState();
-    assetAudioPlayer = AudioPlayer();
-    listenToSensors();
-    _loadSwitchValue();
+    sensorWork();
     checkPass();
+    userCheck();
+  }
+
+  void userCheck() async {
+    idAndPass = await apiService.generateLocationPassword();
+    setState(() {
+       userId = idAndPass.item1;
+       userPass = idAndPass.item2;
+     });
+    userStatus =  await apiService.checkUserExists();
+    userCreated = await apiService.checkAndCreate();
+  }
+
+  void sensorWork() async {
+    await _loadSwitchValue();
+    sensorManager = SensorManager(
+        assetAudioPlayer: AudioPlayer(),
+        xValue: xValue,
+        batteryStatusWork: batteryStatusWork,
+        switchValue: value,
+        secValueUpdate: secValueUpdate,
+        isPlaying: isPlaying,
+        chosenSound: chosenSound);
+     sensorManager.listenToSensors();
+  }
+
+  void stopSound() {
+    sensorManager.stopAlarmSound();
   }
 
 
 
-  // V
-  void playAlarmSound () async {
-    if (batteryStatusWork) {
-      if (!isPlaying && switchValue == 1) {
-        setState(() {
-          isPlaying = true;
-        });
-        await assetAudioPlayer.play(AssetSource(chosenSound));
-        assetAudioPlayer.setReleaseMode(ReleaseMode.loop);
-      }
-    }
-    if (!batteryStatusWork) {
-      if (!isPlaying && switchValue == 1 ) {
-        setState(() {
-          isPlaying = true;
-        });
-        await assetAudioPlayer.play(AssetSource(chosenSound));
-        assetAudioPlayer.setReleaseMode(ReleaseMode.loop);
-      }
-    }
-  }
-  void stopAlarmSound() {
-    if (isPlaying) {
-      assetAudioPlayer.stop();
-      setState(() {
-        isPlaying = false;
-      });
-    }
+  // check user settings instaces. if user delete cache or
+  // temp data this settings need set default value
+  _loadSwitchValue() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      switchValue = value;
+      value = prefs.getInt('switch_value') ?? 0;
+      chosenSound = prefs.getString('chosenSound') ?? 'audios/default_alarm.mp3';
+      xValue = prefs.getDouble('xValue') ?? 1.0;
+      xValueG = prefs.getDouble('xValueG') ?? 3.0;
+      batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? true;
+    });
   }
 
+  // secure function on / off settings to save on temp
+  _saveSwitchValue(int value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('switch_value', value);
+  }
 
   Future<String?> checkPass() async {
     AndroidOptions _getAndroidOptions() => const AndroidOptions(
@@ -142,78 +153,17 @@ class _MyHomePageState extends State<MyHomePage> {
           secValue = storedPassword;
           });
       }
-
     return storedPassword;
 }
-  void listenToSensors() {
-    VolumeController().listener((volume) {
-      VolumeController().getVolume().then((value) {
-        if (value <= 0.7) {
-          VolumeController().setVolume(1);
-      }
-      });
-    });
-    gyroscopeSubscription = gyroscopeEvents.listen((event) {
 
-      if (event.x.abs()> 2 || event.y.abs() > 2) {
-        if(!isPlaying && switchValue == 1  && secValueUpdate) {
-          playAlarmSound();
-
-        }
-      }
-    });
-    accelerometerSubscription = userAccelerometerEvents.listen((event) {
-      if (event.x.abs()> xValue || event.y.abs() > xValue) {
-        if(!isPlaying && switchValue == 1  && secValueUpdate) {
-          //playAlarmSound();
-        }
-      }
-    });
-    assetAudioPlayer.onPlayerStateChanged.listen((PlayerState event) {
-      if (event == PlayerState.playing) {
-        isPlaying = true;
-      }
-      if (event == PlayerState.stopped) {
-        isPlaying = false;
-      }
-    });
-
-  }
   @override
   void dispose() {
-    accelerometerSubscription.cancel(); // Event listener'ı iptal et
-    assetAudioPlayer.dispose();
-    VolumeController().removeListener();
+    sensorManager.dispose();
     super.dispose();
   }
 
 
-  myTest (index) {
-    setState(() {
-      statusApp =  index == 1 ? true : false;
-    });
-  }
-
-  _loadSwitchValue() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      switchValue = value;
-      statusApp = false;
-      value = prefs.getInt('switch_value') ?? 0;
-      chosenSound = prefs.getString('chosenSound') ?? 'audios/default_alarm.mp3';
-      xValue = prefs.getDouble('xValue') ?? 0.0;
-      xValueG = prefs.getDouble('xValueG') ?? 0.0;
-      batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? false;
-    });
-  }
-
-  _saveSwitchValue(int value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt('switch_value', value);
-  }
-
-
-
+  // last step quit alarm if user not save any pass before it shouldn't work
   Future<void> showPasswordPopup(BuildContext context) async {
     AndroidOptions _getAndroidOptions() => const AndroidOptions(
       encryptedSharedPreferences: true,
@@ -254,7 +204,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: () async {
                     if (passwordController.text == storedPassword) {
                       // Password is correct
-                      stopAlarmSound();
+                    // stop alarm add here
+                      stopSound();
                       Navigator.of(context).pop();
                     } else {
                       // Password is incorrect, show error
@@ -382,34 +333,54 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 10,
               ),
-              TextButton(onPressed: (){}, child:  Text("Location Settings", style: TextStyle(
+              TextButton(onPressed: (){
+                Navigator.push(context, MaterialPageRoute(builder: (context)=>const GeoLocation()));
+              }, child:  Text("Location", style: TextStyle(
                   color:  (switchValue == 0) ?
                   Colors.deepPurpleAccent :
                   Colors.blueGrey),)),
               const SizedBox(height:5),
-              TextButton(onPressed: _redirectFunc, child:  Text("Sound Settings" , style: TextStyle(
+              TextButton(onPressed: () {
+                if (!isPlaying && switchValue != 1) {
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) {
+                    return const HomeScreen();
+                  }));
+                }
+              }, child:  Text("Sound Settings" , style: TextStyle(
                   color:  (switchValue == 0) ?
                   Colors.deepPurpleAccent :
                   Colors.blueGrey),),),
               Center(
-                  child: SizedBox(height: MediaQuery.of(context).size.height* 0.15,
+                  child: SizedBox(height: MediaQuery.of(context).size.height* 0.09,
                       child: const BatteryPage())),
               const SizedBox(height: 5,),
-              SizedBox(
-                height: 100,
-                width: MediaQuery.of(context).size.width * 0.75 ,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.warning_outlined, color: Colors.orange,),
-                    Expanded(
-                      child: Text("You can secure your phone unwanted movement!",
-                        softWrap: true,
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  ],
-                ) ,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CopyableText(text: userId),
+                  Text('User ID : $userId',
+                    softWrap: true,
+                    textAlign: TextAlign.center,)
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CopyableText(text: userPass),
+                  Text('User Pass : $userPass',
+                    softWrap: true,
+                    textAlign: TextAlign.center,
+                  )
+                ],
+              ),
+              TextButton(child: Text(
+                'Check online Location from ${apiService.baseUrl}',
+                softWrap: true,
+                textAlign: TextAlign.center,
+              ),
+                  onPressed: () async =>_launchUrl(apiService.baseUrl)),
+              const SizedBox(
+                height: 30,
               )
             ],
           ),
@@ -418,4 +389,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+Future<void> _launchUrl(baseUrl) async {
+  if (!await launchUrl(Uri.parse(baseUrl))) {
+    throw Exception('Could not launch');
+  }
+}
+
 

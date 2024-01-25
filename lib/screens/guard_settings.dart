@@ -17,10 +17,10 @@ class GuardSettings extends StatefulWidget {
 
 class _GuardSettingsWidgetState extends State<GuardSettings> {
   // AccelerationEvent
-  double xValue = 0.0;
+  double xValue = 1.0;
   // GyroscopeEvent
-  double xValueG = 0.0;
-  bool batteryStatusWork = false;
+  double xValueG = 3.0;
+  bool batteryStatusWork = true;
   // loading lottie animation check
   bool isLoading = true;
   @override
@@ -32,9 +32,9 @@ class _GuardSettingsWidgetState extends State<GuardSettings> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       isLoading = false;
-      xValue = prefs.getDouble('xValue') ?? 0.0;
-      xValueG = prefs.getDouble('xValueG') ?? 0.0;
-      batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? false;
+      xValue = prefs.getDouble('xValue') ?? 1.0;
+      xValueG = prefs.getDouble('xValueG') ?? 3.0;
+      batteryStatusWork =  prefs.getBool('batteryStatusWork') ?? true;
     });
   }
 
@@ -87,7 +87,7 @@ class _GuardSettingsWidgetState extends State<GuardSettings> {
               value: batteryStatusWork,
               onChanged: (newBool) {
                 setState(() {
-                  batteryStatusWork = newBool ?? false;
+                  batteryStatusWork = newBool ?? true;
                 });
                 _saveSettings();
               }),
@@ -109,8 +109,8 @@ class _GuardSettingsWidgetState extends State<GuardSettings> {
           Slider(
               value: xValueG,
               min: 0.0,
-              max: 1.0,
-              divisions: 8,
+              max: 10.0,
+              divisions: 10,
               label: "X Value: ${xValueG.toStringAsFixed(2)}",
               onChanged: (newValue){
                 setState(() {
@@ -132,6 +132,4 @@ class _GuardSettingsWidgetState extends State<GuardSettings> {
       ),
     );
   }
-
-
 }
