@@ -10,7 +10,7 @@ class ApiService {
   final Dio _dio = Dio();
 
   // Api Base Url
-  final String baseUrl = 'http://192.168.1.56:3000';
+  final String baseUrl = 'http://192.168.1.12:3000';
 
   late String userId;
   late String userPass;
@@ -25,7 +25,7 @@ class ApiService {
   }
 
   // POST request for creating account
-  Future<Response> createAccount() async {
+  Future<String> createAccount() async {
     await dotenv.load(fileName: ".env"); // .env
     String? secretKey = dotenv.env['SECRET_KEY']; // get Key
 
@@ -41,7 +41,12 @@ class ApiService {
     // İsteği yap
     try {
       Response response = await _dio.post(url, options: Options(headers: headers));
-      return response;
+      if (response.statusCode == 201) {
+        return response.data['message'];
+      } else {
+        return "Error Refresh App Again";
+      }
+
     } on DioException catch (e) {
       // Hata durumunda işlem
       print(e.toString());
@@ -58,9 +63,8 @@ class ApiService {
 
     // Header'ları ayarla
     Map<String, dynamic> headers = {
-      'SecretKey': secretKey, // Secret Key
+      'secretKey': secretKey, // Secret Key
     };
-
     bool result = false;
     try {
       Response response = await _dio.post(url, options: Options(headers: headers), data: {'userId': userId});
@@ -109,8 +113,8 @@ class ApiService {
         return true;
       } else {
         print('Kullanıcı mevcut değil, hesap oluşturulabilir.');
-        Response response = await createAccount();
-        print('Response: ${response.data}');
+        String data = await createAccount();
+        print('Response: $data');
         return false;
       }
     } catch (e) {

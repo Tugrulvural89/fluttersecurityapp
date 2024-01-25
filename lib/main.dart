@@ -97,7 +97,6 @@ class _MyHomePageState extends State<MyHomePage> {
        userId = idAndPass.item1;
        userPass = idAndPass.item2;
      });
-    userStatus =  await apiService.checkUserExists();
     userCreated = await apiService.checkAndCreate();
   }
 
