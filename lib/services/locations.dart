@@ -10,7 +10,7 @@ class ApiService {
   final Dio _dio = Dio();
 
   // Api Base Url
-  final String baseUrl = 'http://192.168.1.12:3000';
+  final String baseUrl = 'http://192.168.1.38:3000';
 
   late String userId;
   late String userPass;
@@ -33,14 +33,19 @@ class ApiService {
 
     // Header'ları ayarla
     Map<String, dynamic> headers = {
-      'UserId': userId,
-      'UserPass': userPass,
-      'SecretKey': secretKey, // Secret Key
+      'SecretKey': secretKey,
+    };
+
+    // Header'ları ayarla
+    Map<String, dynamic> body = {
+      'userId': userId,
+      'userPass': userPass,
+      'location': {'latitude': 0.0,'longitude': 0.0}
     };
 
     // İsteği yap
     try {
-      Response response = await _dio.post(url, options: Options(headers: headers));
+      Response response = await _dio.post(url, options: Options(headers: headers), data: body);
       if (response.statusCode == 201) {
         return response.data['message'];
       } else {
@@ -71,10 +76,9 @@ class ApiService {
       bool responseData = response.data['exists'];
       if (responseData) {
         result = true;
-        return result;
-      } else {
-        return result;
+
       }
+      return result;
     } on DioException catch (e) {
       // Hata durumunda işlem
       print(e.toString());

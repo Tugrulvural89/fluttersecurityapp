@@ -12,12 +12,13 @@ class SensorManager {
   bool batteryStatusWork;
   int switchValue; // guard off
   double xValue; // acceleration cookie value
+  double xGvalue;
   bool secValueUpdate; // pass info updated
   AudioPlayer assetAudioPlayer;
   SensorManager(
       {required this.assetAudioPlayer, required this.chosenSound, required this.xValue,
         required this.batteryStatusWork, required this.switchValue,
-        required this.secValueUpdate, required this.isPlaying,
+        required this.secValueUpdate, required this.isPlaying, required this.xGvalue,
       });
 
 
@@ -60,10 +61,9 @@ class SensorManager {
       //TODO:SUBS CANCEL ROUTERLARDA CALISMIYOR
       //print("Gyroscope event X : ${event.x.abs()}");
       //print("Gyroscope event Y : ${event.y.abs()}");
-      if (event.x.abs() > 2 || event.y.abs() > 2) {
+      if (event.x.abs() > xGvalue || event.y.abs() > xGvalue) {
         if(!isPlaying && switchValue == 1  && secValueUpdate) {
-          //TODO:activate playsound later
-          //playAlarmSound();
+          playAlarmSound();
 
         }
       }
@@ -74,8 +74,7 @@ class SensorManager {
       //print("Accelerometer event Y : ${event.y.abs()}");
       if (event.x.abs()> xValue || event.y.abs() > xValue) {
         if(!isPlaying && switchValue == 1  && secValueUpdate) {
-          //TODO:activate playsound later
-          //playAlarmSound();
+          playAlarmSound();
         }
       }
     });

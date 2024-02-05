@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io' show Platform;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screen_lock/flutter_screen_lock.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:security_app/screens/geo_location.dart';
 import 'package:security_app/screens/home_screen.dart';
 import 'package:security_app/screens/set_password.dart';
 import 'package:security_app/services/locations.dart';
+import 'package:security_app/utils/geo_loc_update.dart';
+import 'package:security_app/utils/geo_loc_update.dart';
+import 'package:security_app/utils/geo_loc_update.dart';
 import 'package:security_app/utils/icon_copy_text.dart';
 import 'package:security_app/widgets/battery_widget.dart';
 import 'package:security_app/widgets/google_maps.dart';
@@ -59,6 +64,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
   int switchValue = 0;
   int value = 0;
   // AccelerationEvent
@@ -83,13 +89,38 @@ class _MyHomePageState extends State<MyHomePage> {
   late bool userCreated;
   late SensorManager sensorManager;
 
+  late String longitude;
+  late String latitude;
+
+  final LocationService _locationService = LocationService();
+
+
+
+  Timer? _timer;
   @override
   void initState() {
     super.initState();
     sensorWork();
     checkPass();
     userCheck();
+    updateRequest();
   }
+
+  Future<void> updateRequest() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.whileInUse ||  permission == LocationPermission.always) {
+      getStreamLoc(permission);
+    } else {
+      LocationPermission permission = await Geolocator.requestPermission();
+      getStreamLoc(permission);
+    }
+  }
+  void getStreamLoc(LocationPermission permission){
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      _locationService.startListeningPosition(permission);
+    });
+  }
+
 
   void userCheck() async {
     idAndPass = await apiService.generateLocationPassword();
@@ -108,6 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
         batteryStatusWork: batteryStatusWork,
         switchValue: value,
         secValueUpdate: secValueUpdate,
+        xGvalue: xValueG,
         isPlaying: isPlaying,
         chosenSound: chosenSound);
      sensorManager.listenToSensors();

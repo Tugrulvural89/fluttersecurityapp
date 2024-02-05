@@ -112,6 +112,8 @@ class GeoLocationState extends State<GeoLocation>{
 
     serviceStatusStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
             (Position? position) {
+              print(latitude);
+              print(longitude);
               setState(() {
                 if (position != null) {
                   latitude = position.latitude;

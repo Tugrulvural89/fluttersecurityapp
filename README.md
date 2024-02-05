@@ -24,7 +24,7 @@ Users will be able to set sensitivity features and a password to utilize locatio
 - [x] Guard Settings
 - [x] Password Setting
 - [x] Sensitivity Adjustment
-- [ ] Building the Application
-- [ ] Deployment
+- [x] Building the Application
+- [x] Deployment
 
 
